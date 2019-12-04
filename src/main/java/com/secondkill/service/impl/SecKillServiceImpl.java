@@ -64,7 +64,7 @@ public class SecKillServiceImpl implements SecKillService {
         return null;
     }
 
-    @Transactional(rollbackFor = SecKillException.class)
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void execute(int secKillId, String userPhone, String md5) throws SecurityException {
         String verifyMd5 = getMd5(secKillId);
