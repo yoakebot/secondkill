@@ -68,9 +68,9 @@ public class SecKillServiceImpl implements SecKillService {
     @Override
     public void execute(int secKillId, String userPhone, String md5) throws SecurityException {
         String verifyMd5 = getMd5(secKillId);
-        if (verifyMd5 == md5 || verifyMd5.equals(md5)) {
+        if (verifyMd5.equals(md5)) {
             //验证通过 开始秒杀
-            int result = 0;
+            int result;
             try {
                 result = secKillDao.subStock(secKillId, new Date());
             } catch (Exception e) {
@@ -79,14 +79,12 @@ public class SecKillServiceImpl implements SecKillService {
             }
             if (result == 0) {
                 //  库存不足或秒杀时间已过
-//                secKillDetailDao.insert(secKillId, userPhone, SecKillStatusEnum.STOCK_LACKING.getStatus());
                 throw new StockLackException(SecKillStatusEnum.STOCK_LACKING.getInfo());
             } else {
                 try {
                     secKillDetailDao.insert(secKillId, userPhone, SecKillStatusEnum.SUCCESS.getStatus());
                 } catch (Exception e) {
                     //重复秒杀
-//                    secKillDetailDao.insert(secKillId, userPhone, SecKillStatusEnum.REPEAT.getStatus());
                     throw new RepeatSecKillException(SecKillStatusEnum.REPEAT.getInfo());
                 }
             }
@@ -105,6 +103,6 @@ public class SecKillServiceImpl implements SecKillService {
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
-        return null;
+        return "";
     }
 }
