@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+</head>
+<body>
+<input th:text="${secKill.name}" th:id="${secKill.stock}" th:name="${secKill.startTime}" th:value="${secKill.name}"/>
+<h1 th:text="${#dates.format(secKill.startTime, 'yy-MM-dd HH:mm:ss')}"></h1>
+</body>
+<script src="static/js/secKill.js"></script>
+</html>

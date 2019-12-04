@@ -1,0 +1,35 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.secondkill.dao.SecKillDao">
+    <select id="get" resultType="com.secondkill.entity.SecKill">
+        select sec_kill_id,
+               name,
+               stock,
+               start_time,
+               end_time
+        from seckill
+        where sec_kill_id = #{secKillId}
+    </select>
+
+    <select id="getAll" resultType="com.secondkill.entity.SecKill">
+        select sec_kill_id,
+               name,
+               stock,
+               start_time,
+               end_time
+        from seckill
+        limit #{offset},#{nums}
+    </select>
+
+    <update id="subStock">
+        update seckill
+        set stock = stock - 1
+        where sec_kill_id = #{secKillId}
+          and stock > 0
+          and #{now} >= start_time
+          and #{now}<![CDATA[ <=]]>
+              end_time
+    </update>
+</mapper>
