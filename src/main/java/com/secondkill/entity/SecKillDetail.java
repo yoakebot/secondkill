@@ -1,8 +1,11 @@
 package com.secondkill.entity;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class SecKillDetail {
+public class SecKillDetail implements Serializable {
+
+    private static final long serialVersionUID = 677360660914828851L;
     private int secKillId;
     private String userPhone;
     private int status;//秒杀状态

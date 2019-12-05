@@ -2,10 +2,12 @@ package com.secondkill.dao;
 
 import com.secondkill.entity.SecKill;
 import com.secondkill.enums.SecKillStatusEnum;
+import com.secondkill.redis.RedisUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 
@@ -15,6 +17,9 @@ class SecKillDaoTest {
 
     @Autowired
     private SecKillDao secKillDao;
+
+    @Resource
+    private RedisUtils redisUtils;
 
     @Autowired
     private SecKillDetailDao secKillDetailDao;
@@ -55,6 +60,30 @@ class SecKillDaoTest {
                 secKillDetailDao.insert(1002, "14300009990", SecKillStatusEnum.REPEAT.getStatus());
                 System.out.println(SecKillStatusEnum.REPEAT.getInfo());
             }
+        }
+    }
+
+    @Test
+    public void redisSet() {
+        SecKill sk = new SecKill();
+        sk.setStock(1);
+        sk.setStartTime(new Date());
+        sk.setSecKillId(213123);
+        sk.setName("ni hao");
+        redisUtils.setCache("123123", sk, 2);
+    }
+
+    @Test
+    public void redisGet() {
+        List<SecKill> list = (List<SecKill>) redisUtils.getCache("secKillList");
+        System.out.println(list);
+        if (list == null) {
+            list = secKillDao.getAll(0, 5);
+            redisUtils.setCache("secKillList", list, 60);
+        }
+        System.out.println(list);
+        for (SecKill s : list) {
+            System.out.println(s);
         }
     }
 }

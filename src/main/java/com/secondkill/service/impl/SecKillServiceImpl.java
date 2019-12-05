@@ -7,10 +7,9 @@ import com.secondkill.entity.SecKill;
 import com.secondkill.enums.SecKillStatusEnum;
 import com.secondkill.exceptions.IllegalSecKillException;
 import com.secondkill.exceptions.RepeatSecKillException;
-import com.secondkill.exceptions.SecKillException;
 import com.secondkill.exceptions.StockLackException;
+import com.secondkill.redis.RedisUtils;
 import com.secondkill.service.SecKillService;
-import org.apache.tomcat.util.security.MD5Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,28 +23,49 @@ import java.util.List;
 @Service("secKillService")
 public class SecKillServiceImpl implements SecKillService {
 
-    private final String encrypted = "fdf37894789(&*(&3894*(^*(3jkl";
-
     @Autowired
     private SecKillDao secKillDao;
 
     @Autowired
     private SecKillDetailDao secKillDetailDao;
 
+    @Autowired
+    private RedisUtils redisUtils;
+
     @Override
     public List<SecKill> getAll() {
-        return secKillDao.getAll(0, 5);
+        List<SecKill> list = (List<SecKill>) redisUtils.getCache("secKillList");
+        if (list == null) {
+            list = secKillDao.getAll(0, 5);
+            redisUtils.setCache("secKillList", list, 60);
+        }
+        return list;
     }
 
     @Override
     public SecKill get(int secKillId) {
-        return secKillDao.get(secKillId);
+        SecKill secKill = (SecKill) redisUtils.getCache(secKillId + "");
+        if (secKill == null) {
+            secKill = secKillDao.get(secKillId);
+            redisUtils.setCache(secKillId + "", secKill, 30);
+        }
+        return secKill;
     }
 
+    /**
+     * 暴露秒杀地址接口
+     *
+     * @param secKillId 商品id
+     * @return 秒杀接口dto
+     */
     @Override
     public Exposed exposed(int secKillId) {
         Exposed exposed = new Exposed();
-        SecKill secKill = secKillDao.get(secKillId);
+        SecKill secKill = (SecKill) redisUtils.getCache(secKillId + "");
+        if (secKill == null) {
+            secKill = secKillDao.get(secKillId);
+            redisUtils.setCache(secKillId + "", secKill, 30);
+        }
         Date now = new Date();
         Date start = secKill.getStartTime();
         Date end = secKill.getEndTime();
@@ -61,9 +81,17 @@ public class SecKillServiceImpl implements SecKillService {
         }
         //未开始
         exposed.setFlag(false);
-        return null;
+        return exposed;
     }
 
+    /**
+     * 执行秒杀程序
+     *
+     * @param secKillId 商品id
+     * @param userPhone 用户手机号
+     * @param md5       秒杀接口md5
+     * @throws SecurityException 秒杀失败结果
+     */
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void execute(int secKillId, String userPhone, String md5) throws SecurityException {
@@ -77,7 +105,7 @@ public class SecKillServiceImpl implements SecKillService {
                 //系统异常
                 throw new SecurityException("异常");
             }
-            if (result == 0) {
+            if (result <= 0) {
                 //  库存不足或秒杀时间已过
                 throw new StockLackException(SecKillStatusEnum.STOCK_LACKING.getInfo());
             } else {
@@ -95,6 +123,7 @@ public class SecKillServiceImpl implements SecKillService {
     }
 
     private String getMd5(int secKillId) {
+        final String encrypted = "fdf37894789(&*(&3894*(^*(3jkl";
         try {
             String str = secKillId + "/" + encrypted;
             MessageDigest md = MessageDigest.getInstance("MD5");
